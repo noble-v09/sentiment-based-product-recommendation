@@ -37,7 +37,7 @@ def preprocess():
     reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
 
 t1 = threading.Thread(target=preprocess)
-t1.start()
+# t1.start()
 
 # print(reviews['reviews_text'][100])
 # print(nltk.__version__)
@@ -85,4 +85,5 @@ async def recommend():
 if __name__ == '__main__':
     # app.run(debug=True)
     app.run(host="0.0.0.0", port=5000)
+    t1.start()
 

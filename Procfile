@@ -1,1 +1,1 @@
-web: gunicorn api:app --timeout 500
+web: python api.py
