@@ -2,10 +2,10 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
-import threading
+# import threading
 # import asyncio
 # import swifter
-from preprocessor import *
+# from preprocessor import *
 
 ## Import model
 with open('./models/model.pkl', 'rb') as f:
@@ -24,24 +24,24 @@ user_list = list(user_ratings.index.unique())
 ## Prepending --SELECT-- as first option
 user_list.insert(0, "--SELECT--")
 
-## Read reviews
-reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
+
 ## Text Preprocessing
 ## Ideally, text preprocessing is ideally done in two ways:
 ## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
 ## Case 2: App Startup
 ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
-## Here, due to resource constraints in Heroku, we are doing it at app startup for all reviews at once --> with the help of multithreading
-def preprocess():
-    reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
-    reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
+## Read reviews
+# reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
+# def preprocess():
+# reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
+# reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
+# t1 = threading.Thread(target=preprocess)
+# t1.start()
 
-t1 = threading.Thread(target=preprocess)
-t1.start()
+## Due to resource constraints in Heroku Deployment, here the reviews dataset is already preprocessed and clean dataset is being used
+with open('./models/clean_df.pkl', 'rb') as f:
+    reviews = pickle.load(f)
 
-# print(reviews['reviews_text'][100])
-# print(nltk.__version__)
-# reviews['reviews_text'] = reviews['reviews_text'].swifter.apply(lemmatize_text)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "development"
@@ -55,7 +55,7 @@ async def recommend():
     user = request.form.get("user_name")
 
     if user==None or user=="--SELECT--":
-        flash("Please select a user from the list", "danger")
+        flash("Please select a user from the dropdown list", "danger")
         return redirect(url_for("index"))
     ## Get top 20 recommendations    
     recommendations = user_ratings.loc[user].sort_values(ascending=False)[:20]
