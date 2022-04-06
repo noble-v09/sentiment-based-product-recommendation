@@ -2,6 +2,7 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
+# import swifter
 from preprocessor import *
 
 ## Import model
@@ -24,14 +25,6 @@ user_list.insert(0, "--SELECT--")
 ## Read reviews
 reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
 
-## Text Preprocessing
-## Ideally, text preprocessing is ideally done in two ways:
-## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
-## Case 2: App Startup
-## Case 3: At runtime, as soon as api is called and the data is read from DB/file
-## Here, for faster response processing, we are doing it at app startup
-reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
-reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
 # print(reviews['reviews_text'][100])
 # print(nltk.__version__)
 # reviews['reviews_text'] = reviews['reviews_text'].swifter.apply(lemmatize_text)
@@ -57,7 +50,15 @@ async def recommend():
     ## Get reviews for each recommendations
     for idx, product in enumerate(recommendations.index):
         prod_reviews = reviews.loc[reviews['name']==product, ['reviews_text']]
-
+        ## Text Preprocessing
+        ## Ideally, text preprocessing is ideally done in two ways:
+        ## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
+        ## Case 2: App Startup
+        ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
+        ## Here, due to resource constraints in Heroku, we are doing it at runtime
+        prod_reviews['reviews_text'] = preprocess_text(prod_reviews['reviews_text'])
+        prod_reviews['reviews_text'] = prod_reviews['reviews_text'].apply(lemmatize_text)
+        
         ## Apply TFIDF Vectorizer to reviews
         X = pd.DataFrame(data=tfidf.transform(prod_reviews['reviews_text']).toarray(), columns=tfidf.get_feature_names())
 
