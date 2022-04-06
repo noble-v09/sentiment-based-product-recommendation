@@ -2,8 +2,6 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
-import swifter
-import string
 from preprocessor import *
 
 ## Import model
@@ -32,16 +30,16 @@ reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
 ## Case 2: App Startup
 ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
 ## Here, for faster response processing, we are doing it at app startup
-
 reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
-reviews['reviews_text'] = reviews['reviews_text'].swifter.apply(lemmatize_text)
+reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
 # print(reviews['reviews_text'][100])
 # print(nltk.__version__)
+# reviews['reviews_text'] = reviews['reviews_text'].swifter.apply(lemmatize_text)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "development"
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/")
 def index():
     return render_template("index.html", user_list=user_list, user=None, show_recommendations=False, recommend_products=list())
 
