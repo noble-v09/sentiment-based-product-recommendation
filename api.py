@@ -2,6 +2,8 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
+import threading
+# import asyncio
 # import swifter
 from preprocessor import *
 
@@ -24,6 +26,18 @@ user_list.insert(0, "--SELECT--")
 
 ## Read reviews
 reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
+## Text Preprocessing
+## Ideally, text preprocessing is ideally done in two ways:
+## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
+## Case 2: App Startup
+## Case 3: At runtime, as soon as api is called and the data is read from DB/file
+## Here, due to resource constraints in Heroku, we are doing it at app startup for all reviews at once --> with the help of multithreading
+def preprocess():
+    reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
+    reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
+
+t1 = threading.Thread(target=preprocess)
+t1.start()
 
 # print(reviews['reviews_text'][100])
 # print(nltk.__version__)
@@ -33,7 +47,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "development"
 
 @app.route("/")
-def index():
+async def index():
     return render_template("index.html", user_list=user_list, user=None, show_recommendations=False, recommend_products=list())
 
 @app.route("/recommend", methods=['GET', 'POST'])
@@ -50,15 +64,7 @@ async def recommend():
     ## Get reviews for each recommendations
     for idx, product in enumerate(recommendations.index):
         prod_reviews = reviews.loc[reviews['name']==product, ['reviews_text']]
-        ## Text Preprocessing
-        ## Ideally, text preprocessing is ideally done in two ways:
-        ## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
-        ## Case 2: App Startup
-        ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
-        ## Here, due to resource constraints in Heroku, we are doing it at runtime
-        prod_reviews['reviews_text'] = preprocess_text(prod_reviews['reviews_text'])
-        prod_reviews['reviews_text'] = prod_reviews['reviews_text'].apply(lemmatize_text)
-        
+                
         ## Apply TFIDF Vectorizer to reviews
         X = pd.DataFrame(data=tfidf.transform(prod_reviews['reviews_text']).toarray(), columns=tfidf.get_feature_names())
 
@@ -75,7 +81,6 @@ async def recommend():
     ## Set list of recommendations and pass it to webpage
     recommend_products = list(zip(top_recommendations['Product'], top_recommendations['Sentiment Rate']))
     return render_template("index.html", user_list=user_list, user=user, show_recommendations=True, recommend_products=recommend_products)
-
 
 if __name__ == '__main__':
     # app.run(debug=True)
