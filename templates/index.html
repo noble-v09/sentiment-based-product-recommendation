@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block main %}
+    <div class="row">
+        <div class="col-md-6">
+            <form action="{{ url_for("recommend") }}" method="post">
+                <div class="form-group">
+                    <label for="user_name" class="text-dark">Username: </label>
+                    <!-- <input type="text" name="user_name" id="" required> -->
+                    <select class="form-select form-select-lg" name="user_name" id="user_list" required style="width: 15rem;">
+                        {% for user_ in user_list %}
+                        <option value="{{ user_ }}">{{ user_ }}</option>
+                        {% endfor%}
+                    </select>
+                </div>
+                
+                <input type="submit" class="btn btn-primary float-right" value="Recommend">
+            </form>
+        </div>
+    </div>
+
+    {% if show_recommendations %}
+        <div class="row mt-3 pt-3">
+            <div class="col-md-9 h3 text-muted">
+                Top 5 Recommendations for user: "{{ user }}"
+            </div>
+        </div>
+        <div class="row mt-3 pt-3">
+            {% for item in recommend_products %}
+                <div class="col-md-4">
+                    <div class="card" style="width: 27rem; height: 12rem;">
+                        <div class="card-body">
+                            <h4 class="card-title text-center text-dark">{{ item[0] }}</h4>
+                            <h6 class="card-subtitle text-right mb-2 text-muted">Sentiment Rate</h6>
+                            <!-- {% if item[1]>50 %} -->
+                            <h4 class="card-subtitle text-right mb-2 text-success">{{ item[1] }}%</h4>
+                            <!-- {% else %}
+                                <h4 class="card-subtitle text-right mb-2 text-danger">{{ item[1] }}%</h4>
+                            {% endif %} -->
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
