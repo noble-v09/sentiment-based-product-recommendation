@@ -83,7 +83,6 @@ async def recommend():
     
     ## Set list of recommendations and pass it to webpage
     recommend_products = list(zip(top_recommendations['Product'], top_recommendations['Sentiment Rate']))
-    print(time.time()-start)
     return render_template("index.html", user_list=user_list, user=user, show_recommendations=True, recommend_products=recommend_products)
 
 if __name__ == '__main__':
