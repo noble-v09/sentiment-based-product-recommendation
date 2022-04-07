@@ -2,6 +2,7 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
+import time
 from concurrent.futures import ThreadPoolExecutor
 # import threading
 # import asyncio
@@ -64,6 +65,8 @@ async def index():
 
 @app.route("/recommend", methods=['GET', 'POST'])
 async def recommend():
+    start = time.time()
+    ## Get username
     user = request.form.get("user_name")
 
     if user==None or user=="--SELECT--":
@@ -72,8 +75,9 @@ async def recommend():
     ## Get top 20 recommendations    
     recommendations = user_ratings.loc[user].sort_values(ascending=False)[:20]
 
-    with ThreadPoolExecutor() as executor:
-        results = executor.map(generate_sentiment, recommendations.index)
+    # with ThreadPoolExecutor() as executor:
+    #     results = executor.map(generate_sentiment, recommendations.index)
+    results = map(generate_sentiment, recommendations.index)
     
     # print(sentiment_rates)
     ## Generate top 5 recommendations and send as Response
@@ -81,6 +85,7 @@ async def recommend():
     
     ## Set list of recommendations and pass it to webpage
     recommend_products = list(zip(top_recommendations['Product'], top_recommendations['Sentiment Rate']))
+    print(time.time()-start)
     return render_template("index.html", user_list=user_list, user=user, show_recommendations=True, recommend_products=recommend_products)
 
 if __name__ == '__main__':
