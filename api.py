@@ -2,6 +2,7 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
+from concurrent.futures import ThreadPoolExecutor
 # import threading
 # import asyncio
 # import swifter
@@ -42,6 +43,17 @@ user_list.insert(0, "--SELECT--")
 with open('./models/clean_df.pkl', 'rb') as f:
     reviews = pickle.load(f)
 
+## Function to generate sentiment for each product recommended
+def generate_sentiment(product):
+    '''Function to generate sentiment for each product recommended by model'''
+    prod_reviews = reviews.loc[reviews['name']==product, ['reviews_text']]
+            
+    ## Apply TFIDF Vectorizer to reviews
+    X = pd.DataFrame(data=tfidf.transform(prod_reviews['reviews_text']).toarray(), columns=tfidf.get_feature_names())
+
+    ## Predict Sentiment --> Negative == 0, Positive == 1
+    y = model.predict(X)
+    return (product, round(np.sum(y)/len(y)*100, 2))
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "development"
@@ -60,23 +72,12 @@ async def recommend():
     ## Get top 20 recommendations    
     recommendations = user_ratings.loc[user].sort_values(ascending=False)[:20]
 
-    sentiment_rates = pd.DataFrame(columns=['Product', 'Sentiment Rate'])
-    ## Get reviews for each recommendations
-    for idx, product in enumerate(recommendations.index):
-        prod_reviews = reviews.loc[reviews['name']==product, ['reviews_text']]
-                
-        ## Apply TFIDF Vectorizer to reviews
-        X = pd.DataFrame(data=tfidf.transform(prod_reviews['reviews_text']).toarray(), columns=tfidf.get_feature_names())
-
-        ## Predict Sentiment --> Negative == 0, Positive == 1
-        y = model.predict(X)
-
-        ## Append final sentiment rate for each product
-        sentiment_rates = sentiment_rates.append(pd.Series([product, round(np.sum(y)/len(y)*100, 2)], index=sentiment_rates.columns), ignore_index=True)
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(generate_sentiment, recommendations.index)
     
-    # print(sentiment_rates.sort_values(by='Sentiment Rate', ascending=False))
+    # print(sentiment_rates)
     ## Generate top 5 recommendations and send as Response
-    top_recommendations = sentiment_rates.sort_values(by='Sentiment Rate', ascending=False)[:5]
+    top_recommendations = pd.DataFrame(results, columns=['Product', 'Sentiment Rate']).sort_values(by='Sentiment Rate', ascending=False)[:5]
     
     ## Set list of recommendations and pass it to webpage
     recommend_products = list(zip(top_recommendations['Product'], top_recommendations['Sentiment Rate']))
