@@ -2,7 +2,6 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
-import time
 # from concurrent.futures import ThreadPoolExecutor
 # import threading
 # import asyncio
@@ -65,7 +64,6 @@ async def index():
 
 @app.route("/recommend", methods=['GET', 'POST'])
 async def recommend():
-    start = time.time()
     ## Get username
     user = request.form.get("user_name")
 
