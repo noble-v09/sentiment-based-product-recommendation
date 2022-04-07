@@ -2,11 +2,11 @@ from flask import Flask, redirect, request, url_for, render_template, flash
 import pandas as pd
 import numpy as np
 import pickle
-from concurrent.futures import ThreadPoolExecutor
+# from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 # import threading
 # import asyncio
 # import swifter
-# from preprocessor import *
+from preprocessor import *
 
 ## Import model
 with open('./models/model.pkl', 'rb') as f:
@@ -31,23 +31,25 @@ user_list.insert(0, "--SELECT--")
 ## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
 ## Case 2: App Startup
 ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
+## In this case, we are doing at RUNTIME
 ## Read reviews
-# reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
-# def preprocess():
-# reviews['reviews_text'] = preprocess_text(reviews['reviews_text'])
-# reviews['reviews_text'] = reviews['reviews_text'].apply(lemmatize_text)
+reviews = pd.read_csv('./data/sample30.csv', usecols=['name', 'reviews_text'])
+def preprocess(df):
+    df['reviews_text'] = preprocess_text(df['reviews_text'])
+    df['reviews_text'] = df['reviews_text'].apply(lemmatize_text)
+    return df
 # t1 = threading.Thread(target=preprocess)
 # t1.start()
 
 ## Due to resource constraints in Heroku Deployment, here the reviews dataset is already preprocessed and clean dataset is being used
-with open('./models/clean_df.pkl', 'rb') as f:
-    reviews = pickle.load(f)
+# with open('./models/clean_df.pkl', 'rb') as f:
+#     reviews = pickle.load(f)
 
 ## Function to generate sentiment for each product recommended
 def generate_sentiment(product):
     '''Function to generate sentiment for each product recommended by model'''
     prod_reviews = reviews.loc[reviews['name']==product, ['reviews_text']]
-            
+    prod_reviews = preprocess(prod_reviews)     
     ## Apply TFIDF Vectorizer to reviews
     X = pd.DataFrame(data=tfidf.transform(prod_reviews['reviews_text']).toarray(), columns=tfidf.get_feature_names())
 
@@ -72,9 +74,9 @@ async def recommend():
     ## Get top 20 recommendations    
     recommendations = user_ratings.loc[user].sort_values(ascending=False)[:20]
 
-    with ThreadPoolExecutor() as executor:
-        results = executor.map(generate_sentiment, recommendations.index)
-    
+    # with ProcessPoolExecutor() as executor:
+    #     results = executor.map(generate_sentiment, recommendations.index)
+    results = map(generate_sentiment, recommendations.index)
     # print(sentiment_rates)
     ## Generate top 5 recommendations and send as Response
     top_recommendations = pd.DataFrame(results, columns=['Product', 'Sentiment Rate']).sort_values(by='Sentiment Rate', ascending=False)[:5]
