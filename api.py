@@ -27,7 +27,7 @@ user_list.insert(0, "--SELECT--")
 
 
 ## Text Preprocessing
-## Ideally, text preprocessing is ideally done in two ways:
+## Ideally, text preprocessing is ideally done in following ways:
 ## Case 1: We do the preprocessing step directly in DB/File itself and keep it ready, rather than doing it at runtime
 ## Case 2: App Startup
 ## Case 3: At runtime, as soon as api is called and the data is read from DB/file
@@ -39,7 +39,8 @@ user_list.insert(0, "--SELECT--")
 # t1 = threading.Thread(target=preprocess)
 # t1.start()
 
-## Due to resource constraints in Heroku Deployment, here the reviews dataset is already preprocessed and clean dataset is being used
+## Due to resource constraints in Heroku Deployment, here the reviews dataset is already preprocessed 
+## and clean dataset ==> ['reviews_text', 'product_name'] is being used
 with open('./models/clean_df.pkl', 'rb') as f:
     reviews = pickle.load(f)
 
