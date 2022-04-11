@@ -40,7 +40,8 @@ def get_user_list():
 # t1 = threading.Thread(target=preprocess)
 # t1.start()
 
-## Due to resource constraints in Heroku Deployment, here the reviews dataset is already preprocessed 
+## Due to resource constraints in Heroku Deployment(constantly getting "R14: Memory quota exceeded" error), 
+## here the reviews dataset is already preprocessed 
 ## and clean dataset ==> ['reviews_text', 'product_name'] is being used
 with open('./models/clean_df.pkl', 'rb') as f:
     reviews = pickle.load(f)
